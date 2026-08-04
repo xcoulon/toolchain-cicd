@@ -131,6 +131,37 @@ func TestNewConfiguration(t *testing.T) {
 		assert.Contains(t, string(raw), "Found in: pkg@v1.0.0")
 	})
 
+	t.Run("save with 2-space indentation", func(t *testing.T) {
+		// given
+		tempFile, err := os.CreateTemp("", "ignored-vuln-*.yaml")
+		require.NoError(t, err)
+		silenceUntil := time.Date(2025, 6, 15, 0, 0, 0, 0, time.UTC)
+		cfg := configuration.Configuration{
+			IgnoredVulnerabilities: []*configuration.Vulnerability{
+				{
+					ID:           "GO-2025-0001",
+					SilenceUntil: silenceUntil,
+					Info:         "https://pkg.go.dev/vuln/GO-2025-0001",
+					Comment:      "Some vulnerability\nFound in: pkg@v1.0.0",
+				},
+			},
+		}
+		// when
+		err = configuration.Save(tempFile.Name(), cfg)
+		// then
+		require.NoError(t, err)
+		raw, err := os.ReadFile(tempFile.Name())
+		require.NoError(t, err)
+		expected := `ignored-vulnerabilities:
+  # Some vulnerability
+  # Found in: pkg@v1.0.0
+  - id: GO-2025-0001
+    silence-until: 2025-06-15
+    info: https://pkg.go.dev/vuln/GO-2025-0001
+`
+		assert.Equal(t, expected, string(raw))
+	})
+
 	t.Run("save empty config", func(t *testing.T) {
 		// given
 		tempFile, err := os.CreateTemp("", "ignored-vuln-*.yaml")

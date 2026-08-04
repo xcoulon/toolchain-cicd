@@ -1,6 +1,7 @@
 package configuration
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"time"
@@ -58,9 +59,14 @@ func Save(path string, cfg Configuration) error {
 
 	mapping.Content = append(mapping.Content, keyNode, seqNode)
 
-	data, err := yaml.Marshal(doc)
-	if err != nil {
+	var buf bytes.Buffer
+	enc := yaml.NewEncoder(&buf)
+	enc.SetIndent(2)
+	if err := enc.Encode(doc); err != nil {
 		return fmt.Errorf("failed to marshal configuration: %w", err)
 	}
-	return os.WriteFile(path, data, 0600)
+	if err := enc.Close(); err != nil {
+		return fmt.Errorf("failed to marshal configuration: %w", err)
+	}
+	return os.WriteFile(path, buf.Bytes(), 0600)
 }
